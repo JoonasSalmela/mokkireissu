@@ -2,19 +2,88 @@
 <html>
 
 <head>
-  <meta charset="utf-8">
-  <title>Mökkireissu</title>
-  <meta name="description" content="">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <title>Mökkireissu</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <meta property="og:title" content="">
-  <meta property="og:type" content="">
-  <meta property="og:url" content="">
-  <meta property="og:image" content="">
+    <meta property="og:title" content="">
+    <meta property="og:type" content="">
+    <meta property="og:url" content="">
+    <meta property="og:image" content="">
+
+    <style>
+        body {
+            background-image: url("bg.jpg");
+            background-size: cover;
+        }
+
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 100px;
+        }
+
+        #countdown {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #countdown div {
+            font-family: monospace;
+            color: lightgray;
+            text-shadow: 1px 1px gray;
+            font-size: 50pt;
+            justify-content: center;
+        }
+    </style>
 
 </head>
 
 <body>
+
+<div id="container">
+    <div id="countdown">
+        <div id="days"><span class="value">10</span> päivää</div>
+        <div id="hours"><span class="value">10</span> tuntia</div>
+        <div id="minutes"><span class="value">10</span> minuuttia</div>
+        <div id="seconds"><span class="value">10</span> sekuntia</div>
+    </div>
+</div>
+
+<script>
+    const deadline = new Date('2022-05-26T08:00:00+03:00');
+
+    function calculateTimeUntil(deadline) {
+        const total = Math.floor((deadline.valueOf() - Date.now()))
+        const seconds = Math.floor((total / 1000) % 60);
+        const minutes = Math.floor((total / 1000 / 60) % 60);
+        const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(total / (1000 * 60 * 60 * 24));
+        return {
+            days,
+            hours,
+            minutes,
+            seconds
+        };
+    }
+
+    function render(counters) {
+        Object.entries(counters)
+            .forEach(([unit, value]) => {
+                document.querySelector(`#${unit} span.value`).textContent = value.toString();
+            });
+    }
+
+    function doIt() {
+        render(calculateTimeUntil(deadline));
+    }
+
+    doIt();
+    setInterval(doIt, 500);
+
+</script>
 
 </body>
 
