@@ -39,6 +39,10 @@
             font-size: 30pt;
             justify-content: center;
         }
+
+        #countdown div {
+            display: none;
+        }
     </style>
 
 </head>
@@ -47,15 +51,18 @@
 
 <div id="container">
     <div id="countdown">
-        <div id="days"><span class="value">10</span> päivää</div>
-        <div id="hours"><span class="value">10</span> tuntia</div>
-        <div id="minutes"><span class="value">10</span> minuuttia</div>
-        <div id="seconds"><span class="value">10</span> sekuntia</div>
+        <div id="days" class="time"><span class="value"></span> päivää</div>
+        <div id="hours" class="time"><span class="value"></span> tuntia</div>
+        <div id="minutes" class="time"><span class="value"></span> minuuttia</div>
+        <div id="seconds" class="time"><span class="value"></span> sekuntia</div>
+        <div id="distance" class="distance"><span class="value">...</span> kilometriä</div>
+        <div id="error" class="error"></div>
     </div>
 </div>
 
 <script>
     const deadline = new Date('2022-05-26T08:00:00+03:00');
+    const mokkiCoordinates = [28.18871, 61.05871];
 
     function calculateTimeUntil(deadline) {
         const total = Math.floor((deadline.valueOf() - Date.now()))
@@ -71,6 +78,23 @@
         };
     }
 
+    function distanceBetween(coords1, coords2) {
+
+        // convert degrees to rads
+        const lon1 = coords1[0] * Math.PI / 180;
+        const lon2 = coords2[0] * Math.PI / 180;
+        const dLon = lon2 - lon1;
+        const lat1 = coords1[1] * Math.PI / 180;
+        const lat2 = coords2[1] * Math.PI / 180;
+        const dLat = lat2 - lat1;
+        const radius = 6371000;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return radius * c;
+    }
+
     function render(counters) {
         Object.entries(counters)
             .forEach(([unit, value]) => {
@@ -78,12 +102,68 @@
             });
     }
 
-    function doIt() {
-        render(calculateTimeUntil(deadline));
+    function show(selector) {
+        document.querySelectorAll(selector).forEach((el) => {
+            el.style.display = 'block';
+        });
     }
 
-    doIt();
-    setInterval(doIt, 500);
+    function hide(selector) {
+        document.querySelectorAll(selector).forEach((el) => {
+            el.style.display = 'none';
+        });
+    }
+
+    function showError(message) {
+        document.querySelector('#error').textContent = message;
+    }
+
+    const modes = {
+        time: () => {
+            show('.time');
+            function doIt() {
+                render(calculateTimeUntil(deadline));
+            }
+
+            doIt();
+            setInterval(doIt, 500);
+        },
+        distance: () => {
+            show('.distance');
+            function handleError(err) {
+                console.log(err);
+                hide('.distance');
+                showError('Missä geolokaatio?');
+            }
+            function handlePosition(position) {
+                console.log(position);
+                const coords = [position.coords.longitude, position.coords.latitude];
+                const distanceInMeters = distanceBetween(coords, mokkiCoordinates);
+                const distanceInKmRounded = (distanceInMeters / 1000).toFixed(2);
+                document.querySelector('.distance span.value').textContent = distanceInKmRounded;
+            }
+
+            navigator.geolocation.watchPosition(handlePosition, handleError)
+        }
+    };
+
+    function resolveMode() {
+        const hash = location.hash.replace('#', '');
+        if (modes[hash]) {
+            return modes[hash];
+        }
+        if (deadline > new Date()) {
+            return modes.time;
+        }
+        return modes.distance;
+    }
+
+    resolveMode()();
+
+    /*
+    TODO:
+    - Testaa, että resolveMode toimii menneellä
+     */
 
 </script>
 
